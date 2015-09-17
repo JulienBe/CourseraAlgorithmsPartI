@@ -1,4 +1,10 @@
-package com.company;
+package be.julien;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Arrays;
 
 /**
  * Given a composite systems comprised of randomly distributed insulating and metallic materials:
@@ -18,34 +24,34 @@ public class Percolation {
     /**
      * A cell is open if it points to someone else
      */
-    private final int[]cells;
+    final int[]cells;
     private int occupiedCells;
     private final int n, virtualTop, virtualBottom;
 
-    public Percolation(int n) throws IllegalArgumentException{
-        if (n <= 0)
-            throw IllegalArgumentException;
+    public Percolation(int n) {
         this.cells = new int[(n * n) + 2];
         this.n = n;
-        virtualTop = n + 1;
-        virtualBottom = n + 2;
-        initTopBottom(n);
+        virtualTop = cells.length;
+        virtualBottom = cells.length + 1;
         initArray(n);
+        initTopBottom(n);
     }
 
     public void open(int row, int col) {
         checkArgument(0, n - 1, row - 1, col - 1);
-        int index = rowAndColToIndex(row, col);
+        int index = rowAndColToIndex(row - 1, col - 1);
         if (!isOpen(row, col)) {
+            cells[index] = index;
             int[] adjacentIndexes = getAdjacentIndex(index);
             for (int neighboor : adjacentIndexes)
-                union(index, neighboor);
+                if (isOpen(indexToRow(neighboor) + 1, indexToCol(neighboor) + 1))
+                    union(index, neighboor);
             occupiedCells++;
         }
     }
 
     public boolean isOpen(int row, int col) {
-        return cells[rowAndColToIndex(row - 1, col - 1)] != rowAndColToIndex(row - 1, col - 1);
+        return cells[rowAndColToIndex(row - 1, col - 1)] != -1;
     }
 
     public boolean isFull(int row, int col) {
@@ -62,10 +68,6 @@ public class Percolation {
     }
 
     private void initTopBottom(int n) {
-        for (int i = 0; i < n; i++) {
-            cells[i] = virtualTop;
-            cells[(n * (n - 1)) + i] = virtualBottom;
-        }
         cells[cells.length - 2] = virtualTop;
         cells[cells.length - 1] = virtualBottom;
     }
@@ -76,7 +78,7 @@ public class Percolation {
      */
     private void initArray(int n) {
         for (int i = 0; i < cells.length; i++)
-            cells[i] = i;
+            cells[i] = -1;
     }
 
     private int findRootOf(int index) {
@@ -84,7 +86,6 @@ public class Percolation {
             index = cells[index];
         return index;
     }
-
 
     private void union(int index1, int index2) {
         int root1 = findRootOf(index1);
@@ -97,7 +98,6 @@ public class Percolation {
             if (i < min || i > max)
                 throw new IndexOutOfBoundsException("index is out of bounds, should be between " + min + " and " + n);
     }
-
 
     private int[] getAdjacentIndex(int index) {
         int row = indexToRow(index);
@@ -124,4 +124,64 @@ public class Percolation {
     private boolean hasUpperNeighbour(int i) {              return i < n - 1;                                       }
     private boolean hasLowerNeighbour(int i) {              return i > 0;                                           }
 
+    @Override
+    public String toString() {
+        String s = "\n\n";
+        for (int i = 0; i < cells.length; i++) {
+            if (i % n == 0)
+                s += "\n";
+            if (isOpen((i / n) + 1, (i % n) + 1))
+                s += "X";
+            else
+                s += " ";
+        }
+        for (int i = 0; i < cells.length; i++) {
+            if (i % n == 0)
+                s += "\n";
+            s += " ";
+            if (cells[i] > 99)
+                s += cells[i];
+            else if (cells[i] > 9)
+                s += cells[i] + " ";
+            else if (cells[i] > -1)
+                s += cells[i] + "  ";
+            else
+                s += cells[i] + " ";
+
+        }
+        return "Percolation{" +
+                "n=" + n +
+                ", cells=" + Arrays.toString(cells) +
+                ", occupiedCells=" + occupiedCells +
+                '}' + s;
+    }
+
+    /**
+     * For testing
+     * @param fileName
+     */
+    public void processFile(String fileName) {
+        Path path = Paths.get(fileName);
+        try {
+            Files.lines(path).forEach(s -> processLine(s));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void processLine(String s) {
+        int[] numbers = getColAndRow(s.split(" "));
+
+        if (numbers[1] != 0)
+            open(Integer.valueOf(numbers[0]), Integer.valueOf(numbers[1]));
+    }
+
+    private int[] getColAndRow(String[] splitted) {
+        int[] coords = new int[2];
+        int index = 0;
+        for (String s : splitted)
+            if (s.matches("[0-9]+"))
+                coords[index++] = Integer.valueOf(s);
+        return coords;
+    }
 }
