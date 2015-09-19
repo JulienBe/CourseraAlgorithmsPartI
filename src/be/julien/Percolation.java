@@ -31,8 +31,8 @@ public class Percolation {
     public Percolation(int n) {
         this.cells = new int[(n * n) + 2];
         this.n = n;
-        virtualTop = cells.length;
-        virtualBottom = cells.length + 1;
+        virtualTop = cells.length - 2;
+        virtualBottom = cells.length - 1;
         initArray(n);
         initTopBottom(n);
     }
@@ -64,7 +64,7 @@ public class Percolation {
     }
 
     public boolean percolates() {
-        return cells[cells.length - 2] == cells[cells.length - 1];
+        return findRootOf(cells[cells.length - 2]) == findRootOf(cells[cells.length - 1]);
     }
 
     private void initTopBottom(int n) {
@@ -105,6 +105,8 @@ public class Percolation {
         int size = 2;
         if (isOnEdge(row)) size++;
         if (isOnEdge(col)) size++;
+        if (isTop(row)) size++;
+        if (isBottom(row)) size++;
 
         int[] neighbours = new int[size];
         int arrayIndex = 0;
@@ -113,15 +115,19 @@ public class Percolation {
         if (hasUpperNeighbour(col)) neighbours[arrayIndex++] = index + 1;
         if (hasLowerNeighbour(row)) neighbours[arrayIndex++] = index - n;
         if (hasUpperNeighbour(row)) neighbours[arrayIndex++] = index + n;
+        if (isTop(row))             neighbours[arrayIndex++] = virtualTop;
+        if (isBottom(row))          neighbours[arrayIndex++] = virtualBottom;
         return neighbours;
     }
 
-    private void setCellValue(int index, int value) {       cells[index] = value;    }
+    private void setCellValue(int index, int value) {       cells[index] = value;                                   }
     private boolean isOnEdge(int i) {                       return hasLowerNeighbour(i) && hasUpperNeighbour(i);    }
     private int rowAndColToIndex(int row, int col) {        return row * n + col;                                   }
     private int indexToCol(int index) {                     return index % n;                                       }
     private int indexToRow(int index) {                     return index / n;                                       }
     private boolean hasUpperNeighbour(int i) {              return i < n - 1;                                       }
+    private boolean isBottom(int row) {                     return row == n - 1;                                    }
+    private boolean isTop(int row) {                        return row == 0;                                        }
     private boolean hasLowerNeighbour(int i) {              return i > 0;                                           }
 
     @Override
